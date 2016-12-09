@@ -31,9 +31,9 @@ if ( opt$verbose ) {
 
 # end set interface
 
-# get map contend from files
-map1 <- read.table(text=readLines(opt$map1)[count.fields(opt$map1, sep="\t") == 4], sep="\t")
-map2 <- read.table(text=readLines(opt$map2)[count.fields(opt$map2, sep="\t") == 4], sep="\t")
+# get map content from files
+map1 <- read.table(text=readLines(opt$map1)[count.fields(opt$map1, sep="\t") == 4], sep="\t", stringsAsFactors=F)
+map2 <- read.table(text=readLines(opt$map2)[count.fields(opt$map2, sep="\t") == 4], sep="\t", stringsAsFactors=F)
 
 # get phylogeny from one of maps
 phylogeny <- read.table(text=readLines(opt$map1)[count.fields(opt$map1, sep="\t") == 3], sep="\t", stringsAsFactors=F)
@@ -49,7 +49,13 @@ map1$psname <- sub("[^:]+:\\s+", "", map1$psname, perl=T)
 colnames(map2) = c("prot_id", "ps", "psti", "psname")
 map2$psname <- sub("[^:]+:\\s+", "", map2$psname, perl=T)
 
+# create a grid to be used later to store results of joins
+my_grid <- matrix(data=NA, nrow=nrow(phylogeny), ncol=nrow(phylogeny))
+rownames(my_grid) <- paste("map1_ps", 1:nrow(my_grid), sep="")
+colnames(my_grid) <- paste("map2_ps", 1:ncol(my_grid), sep="")
 
+# do the joins
+for (ps in phylogeny$ps) print(ps)
 
 
 # SYNOPSIS
