@@ -29,11 +29,28 @@ if ( opt$verbose ) {
     write("writing some verbose output to standard error...\n", stderr())
 }
 
-# set interface
+# end set interface
 
-# Read table
-#table <- read.table(opt$input, header=TRUE, sep="\t")
-#r <- read.table(text=readLines("./t/data/bsfull3.phmap_names")[count.fields("./t/data/bsfull3.phmap_names", sep="\t") == 4], sep="\t")
+# get map contend from files
+map1 <- read.table(text=readLines(opt$map1)[count.fields(opt$map1, sep="\t") == 4], sep="\t")
+map2 <- read.table(text=readLines(opt$map2)[count.fields(opt$map2, sep="\t") == 4], sep="\t")
+
+# get phylogeny from one of maps
+phylogeny <- read.table(text=readLines(opt$map1)[count.fields(opt$map1, sep="\t") == 3], sep="\t", stringsAsFactors=F)
+phylogeny <- phylogeny[-1,]    # delete first row
+colnames(phylogeny) = c("ps", "psti", "psname")
+
+# change the psname to be more readable
+phylogeny$psname <- sub("[^:]+:\\s+", "", phylogeny$psname, perl=T)
+
+# map setup
+colnames(map1) = c("prot_id", "ps", "psti", "psname")
+map1$psname <- sub("[^:]+:\\s+", "", map1$psname, perl=T)
+colnames(map2) = c("prot_id", "ps", "psti", "psname")
+map2$psname <- sub("[^:]+:\\s+", "", map2$psname, perl=T)
+
+
+
 
 # SYNOPSIS
 
