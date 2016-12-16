@@ -219,8 +219,8 @@ load_package("xlsx")
 
 # set interface
 option_list <- list(
-    make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
-        help="Should the program print extra stuff out? [default]"),
+    make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
+        help="Should the program print extra stuff out? [default FALSE]"),
     make_option(c("-q", "--quietly"), action="store_false", dest="verbose",
         help="Be quiet"),
     make_option(c("-m1", "--map1"),   action = "store", type="character", default=FALSE,
@@ -288,7 +288,7 @@ for (map1 in phylogeny$ps) {
 }
 
 # plot a heatmap
-filename <- paste(map1_name, "_vs_", map2_name, "_comp", sep="")
+filename <- paste(opt$output, map1_name, "_vs_", map2_name, "_comp", sep="")
 pdf(file=paste(filename, ".pdf", sep=""), paper="a4r", colormodel = "cmyk", family="ArialMT")
 my_heatmap(my_grid, Colv = NA, Rowv = NA, scale="row", col=rev(heat.colors(20)),
     main=paste(map1_name, "(1)_vs_", map2_name, "(2)_comparison", sep=""), xlab=map2_name, ylab=map1_name)
@@ -301,7 +301,7 @@ dev.off()
 
 # write grid to xlsx
 write.table(my_grid,  file=paste(filename, ".tsv", sep=""), sep="\t")
-write.xlsx(my_grid, file=paste(filename, ".xlsx", sep=""), sheetName=filename, col.names=TRUE, row.names=TRUE, append=FALSE, showNA=FALSE)
+write.xlsx(my_grid, file=paste(filename, ".xlsx", sep=""), sheetName=paste(map1_name, "_vs_", map2_name, sep=""), col.names=TRUE, row.names=TRUE, append=FALSE, showNA=FALSE)
 
 
 
