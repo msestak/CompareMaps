@@ -1,9 +1,41 @@
 #!/usr/bin/Rscript
 
+# helping functions to load and install packages if required
+## automatic package installation
+
+
+## externalized installer to also allow for installation without loading
+install_package <- function(x){
+    if(!isTRUE(x %in% .packages(all.available=TRUE)) && any(available.packages()[,1]==x)) {
+        # update.packages(ask=F) # update dependencies, if any.
+        eval(parse(text=paste("install.packages('", x, "')", sep="")))
+    }
+
+    ## if it's still missing check if it's on bioconductor
+    if(!isTRUE(x %in% .packages(all.available=TRUE))) {
+        bcPackages <- as.vector(read.dcf(url("https://bioconductor.org/packages/3.3/bioc/src/contrib/PACKAGES"), "Package"))
+
+        if(any(bcPackages==x)){
+            source("http://bioconductor.org/biocLite.R")
+            eval(parse(text=paste("biocLite('", x, "', ask=FALSE)", sep="")))
+        }
+    }
+}
+
+load_pack <-  function(x, warn_conflicts=T){
+    x <- as.character(substitute(x));
+
+   install_package(x)
+
+    ## load it using a library function so that load_pack errors if package is still not installed
+    eval(parse(text=paste("library(", x, ",  quietly=T, warn.conflicts=", warn_conflicts, ")", sep="")))
+}
+
+
 # load libraries
 # install.packages("optparse", dependencies=TRUE, repos='http://cran.rstudio.com/')
-library(optparse)
-library(data.table)
+load_pack(optparse)
+load_pack(data.table)
 
 # set interface
 option_list <- list(
@@ -73,6 +105,20 @@ for (map1 in phylogeny$ps) {
         #print(my_grid[map1,map2])
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # SYNOPSIS
 
