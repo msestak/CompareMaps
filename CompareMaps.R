@@ -3,6 +3,7 @@
 # load libraries
 # install.packages("optparse", dependencies=TRUE, repos='http://cran.rstudio.com/')
 library(optparse)
+library(data.table)
 
 # set interface
 option_list <- list(
@@ -31,10 +32,6 @@ if ( opt$verbose ) {
 
 # end set interface
 
-# get map content from files
-map1 <- read.table(text=readLines(opt$map1)[count.fields(opt$map1, sep="\t") == 4], sep="\t", stringsAsFactors=F)
-map2 <- read.table(text=readLines(opt$map2)[count.fields(opt$map2, sep="\t") == 4], sep="\t", stringsAsFactors=F)
-
 # get phylogeny from one of maps
 phylogeny <- read.table(text=readLines(opt$map1)[count.fields(opt$map1, sep="\t") == 3], sep="\t", stringsAsFactors=F)
 phylogeny <- phylogeny[-1,]    # delete first row
@@ -42,6 +39,10 @@ colnames(phylogeny) = c("ps", "psti", "psname")
 
 # change the psname to be more readable
 phylogeny$psname <- sub("[^:]+:\\s+", "", phylogeny$psname, perl=T)
+
+# get map content from files
+map1 <- read.table(text=readLines(opt$map1)[count.fields(opt$map1, sep="\t") == 4], sep="\t", stringsAsFactors=F)
+map2 <- read.table(text=readLines(opt$map2)[count.fields(opt$map2, sep="\t") == 4], sep="\t", stringsAsFactors=F)
 
 # map setup
 colnames(map1) = c("prot_id", "ps", "psti", "psname")
@@ -54,13 +55,28 @@ my_grid <- matrix(data=NA, nrow=nrow(phylogeny), ncol=nrow(phylogeny))
 rownames(my_grid) <- paste("map1_ps", 1:nrow(my_grid), sep="")
 colnames(my_grid) <- paste("map2_ps", 1:ncol(my_grid), sep="")
 
-# do the joins
-for (ps in phylogeny$ps) print(ps)
+# convert data.frames to data.tables to be usable with data.table
+mapa1 = as.data.table(map1)
+mapa2 = as.data.table(map2)
+setkey(mapa1,prot_id)   # index mapa1 on prot_id column
+setkey(mapa2,prot_id)
 
+# do the joins
+# SELECT COUNT(ful.prot_id)
+# FROM bacillus.bsfull3_map AS ful
+# INNER JOIN bacillus.bscdhit3_map AS cd ON cd.prot_id = ful.prot_id
+# WHERE cd.phylostrata = 1 AND ful.phylostrata = 1;
+for (map1 in phylogeny$ps) {
+    for (map2 in phylogeny$ps) {
+        #print(my_grid[map1,map2])
+        my_grid[map1,map2] <- mapa1[mapa1$ps==map1][mapa2[mapa2$ps==map2], NROW(prot_id), nomatch=0, on = "prot_id"]
+        #print(my_grid[map1,map2])
+    }
+}
 
 # SYNOPSIS
 
-# ./calculate_hyper.R -i ./t/data/disease.txt -o ./t/data/disease_hyper.txt
+# ./CompareMaps.R --map1 file --map2 file -o out
 
 # DESCRIPTION
 
