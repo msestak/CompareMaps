@@ -201,7 +201,8 @@ my_heatmap <- function (x, Rowv = NULL, Colv = if (symm) "Rowv" else NULL,
         frame()
     if (!is.null(main)) {
         par(xpd = NA)
-        title(main, cex.main = 1.5 * op[["cex.main"]])
+        # changed cex.main from 1.5 * to 1
+        title(main, cex.main = 1 * op[["cex.main"]])
     }
     invisible(list(rowInd = rowInd, colInd = colInd, Rowv = if (keep.dendro && 
         doRdend) ddr, Colv = if (keep.dendro && doCdend) ddc))
@@ -260,8 +261,8 @@ colnames(map2) = c("prot_id", "ps", "psti", "psname")
 map2$psname <- sub("[^:]+:\\s+", "", map2$psname, perl=T)
 
 # get map names from files
-map1_name <- sub("\\A.+\\/(.+)\\.phmap_names", "\\1", opt$map1, perl=T)
-map2_name <- sub("\\A.+\\/(.+)\\.phmap_names", "\\1", opt$map2, perl=T)
+map1_name <- sub("\\A(.+)\\.phmap_names", "\\1", basename(opt$map1), perl=T)
+map2_name <- sub("\\A(.+)\\.phmap_names", "\\1", basename(opt$map2), perl=T)
 
 # create a grid to be used later to store results of joins
 my_grid <- matrix(data=NA, nrow=nrow(phylogeny), ncol=nrow(phylogeny))
@@ -288,20 +289,21 @@ for (map1 in phylogeny$ps) {
 }
 
 # plot a heatmap
-filename <- paste(opt$output, map1_name, "_vs_", map2_name, "_comp", sep="")
-pdf(file=paste(filename, ".pdf", sep=""), paper="a4r", colormodel = "cmyk", family="ArialMT")
+filename <- paste(map1_name, "_vs_", map2_name, "_comp", sep="")
+file_path <- file.path(normalizePath(opt$output), filename)
+pdf(file=paste(file_path, ".pdf", sep=""), paper="a4r", colormodel = "cmyk", family="ArialMT")
 my_heatmap(my_grid, Colv = NA, Rowv = NA, scale="row", col=rev(heat.colors(20)),
     main=paste(map1_name, "(1)_vs_", map2_name, "(2)_comparison", sep=""), xlab=map2_name, ylab=map1_name)
 dev.off()
 
-png(file=paste(filename, ".png", sep=""), units="cm", width=18, height=16, bg="white", res=600)
+png(file=paste(file_path, ".png", sep=""), units="cm", width=18, height=16, bg="white", res=600)
 my_heatmap(my_grid, Colv = NA, Rowv = NA, scale="row", col=rev(heat.colors(20)),
     main=paste(map1_name, "(1)_vs_", map2_name, "(2)_comparison", sep=""), xlab=map2_name, ylab=map1_name)
 dev.off()
 
 # write grid to xlsx
-write.table(my_grid,  file=paste(filename, ".tsv", sep=""), sep="\t")
-write.xlsx(my_grid, file=paste(filename, ".xlsx", sep=""), sheetName=paste(map1_name, "_vs_", map2_name, sep=""), col.names=TRUE, row.names=TRUE, append=FALSE, showNA=FALSE)
+write.table(my_grid,  file=paste(file_path, ".tsv", sep=""), sep="\t")
+write.xlsx(my_grid, file=paste(file_path, ".xlsx", sep=""), sheetName=paste(map1_name, "_vs_", map2_name, sep=""), col.names=TRUE, row.names=TRUE, append=FALSE, showNA=FALSE)
 
 
 
