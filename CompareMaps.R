@@ -311,20 +311,6 @@ write.xlsx(my_grid, file=paste(file_path, ".xlsx", sep=""), sheetName=paste(map1
 
 
 
-# SYNOPSIS
-
-# ./CompareMaps.R --map1 file --map2 file -o out
-
-# DESCRIPTION
-
-# This script requires input file with this header:
-# phylostrata\tphylostrata_name\tFunctional term\tquant\tsample\thit\ttotal
-# after header paste your values like this:
-# 1\tCellular organisms\tdisease_genes\t970\t8285\t1760\t22845
-# ...
-
-# it will then calculate log-odds, hypergeometric test, FDR and Bonferroni correction and write it to tsv file.
-
 # AUTHOR
 
 # <Martin Sebastijan Šestak> (<sestakm@yahoo.com>)
@@ -333,60 +319,8 @@ write.xlsx(my_grid, file=paste(file_path, ".xlsx", sep=""), sheetName=paste(map1
 
 # Copyright (c) <2016> <Martin Sebastijan Šestak> (<sestakm@yahoo.com>). All rights reserved.
 
-# This module is free software; you can redistribute it and/or
-# modify it under the same terms as Perl itself. See L<perlartistic>.
+# This program is free software; you can redistribute it and/or modify it under the GPL version 3.
 
-# This program is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful, 
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
