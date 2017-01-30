@@ -31,12 +31,12 @@ my_heatmap(my_grid, Colv = NA, Rowv = NA, scale="row", col=rev(heat.colors(20)),
 AUTHOR
 ======
 
-Martin Sebastijan Šestak (<mssestak@gmail.com>)
+Martin Sebastijan Šestak (<martin.s.sestak@gmail.com>)
 
 LICENCE AND COPYRIGHT
 =====================
 
-Copyright (c) &lt;2016&gt; Martin Sebastijan Šestak. All rights reserved.
+Copyright (c) 2016-2017 Martin Sebastijan Šestak. All rights reserved.
 
 This module is free software; you can redistribute it and/or modify it under the GPL version 3.
 
