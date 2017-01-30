@@ -1,0 +1,309 @@
+---
+title: "CompareMaps_work_in_progress"
+author: "Martin Sebastijan Šestak"
+date: "12/9/2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## CompareMaps workflow from RStudio
+
+This is created so I don't need to rerun code every time from scratch.
+```{r, echo=TRUE}
+library("data.table")
+library("sqldf")
+
+```
+
+
+```{r, echo=TRUE}
+getwd()
+setwd("/msestak/gitdir/CompareMaps/t/data")
+getwd()
+list.files()
+```
+
+get phylogeny from one of maps
+
+```{r, echo=TRUE}
+phylogeny <- read.table(text=readLines("bsfull3.phmap_names")[count.fields("bsfull3.phmap_names", sep="\t")==3], sep="\t", stringsAsFactors=F)
+phylogeny <- phylogeny[-1,]
+colnames(phylogeny) = c("ps", "psti", "psname")
+phylogeny$psname <- sub("[^:]+:\\s+", "", phylogeny$psname, perl=T)
+phylogeny
+```
+
+get map content from files
+```{r, echo=TRUE}
+map1 <- read.table(text=readLines("bsfull3.phmap_names")[count.fields("bsfull3.phmap_names", sep="\t")==4], sep="\t", stringsAsFactors=F)
+map2 <- read.table(text=readLines("bscdhit3.phmap_names")[count.fields("bscdhit3.phmap_names", sep="\t")==4], sep="\t", stringsAsFactors=F)
+colnames(map1) = c("prot_id", "ps", "psti", "psname")
+map1$psname <- sub("[^:]+:\\s+", "", map1$psname, perl=T)
+colnames(map2) = c("prot_id", "ps", "psti", "psname")
+map2$psname <- sub("[^:]+:\\s+", "", map2$psname, perl=T)
+head(map1)
+```
+create a grid to be used later to store results of joins
+```{r, echo=TRUE}
+my_grid <- matrix(data=NA, nrow=nrow(phylogeny), ncol=nrow(phylogeny))
+rownames(my_grid) <- paste("map1_ps", 1:nrow(my_grid), sep="")
+colnames(my_grid) <- paste("map2_ps", 1:ncol(my_grid), sep="")
+my_grid
+```
+# convert data.frames to data.table to use data.table joins on them
+```{r, ECHO=TRUE}
+mapa1 = as.data.table(map1)
+mapa2 = as.data.table(map2)
+setkey(mapa1,prot_id)
+setkey(mapa2,prot_id)
+system.time(ps1 <- mapa1[mapa2, .N, nomatch=0, on = "prot_id"])
+ps1 <- mapa1[mapa2, NROW(prot_id), nomatch=0, on = "prot_id"]
+system.time(ps1 <- mapa1[mapa1$ps==1][mapa2[mapa2$ps==1], .N, nomatch=0, on = "prot_id"])
+ps1
+
+```
+do the joins in a double loop to iterate over all positions in a matrix
+```{r, echo=TRUE}
+for (map1 in phylogeny$ps) {
+    for (map2 in phylogeny$ps) {
+        #print(my_grid[map1,map2])
+        my_grid[map1,map2] <- mapa1[mapa1$ps==map1][mapa2[mapa2$ps==map2], NROW(prot_id), nomatch=0, on = "prot_id"]
+        print(my_grid[map1,map2])
+    }
+}
+
+```
+
+create a levelplot
+```{r, eval=F, echo=T, warning=FALSE}
+M <- cor(my_grid, method = "pearson")
+levelplot(M, col.regions=rev(heat.colors(16)))
+
+```
+
+
+```{r, eval=F, echo=TRUE}
+my_colors <-colorRampPalette(brewer.pal(9,"Reds"))(16)
+levelplot(M, col.regions=my_colors)
+
+z <- as.matrix(dist(my_grid, method="canberra"))
+levelplot(z, col.regions=rev(my_colors))
+
+dd <- as.matrix(as.dist((1-cor(my_grid))/2))
+levelplot(dd, col.regions=rev(my_colors))
+
+levelplot(my_grid, col.regions=rev(gray(0:100/100)), xlab = "X koordinata", ylab = "Y koordinata", main="Naslov", scale=list(x=list(rot=45)))
+
+heatmap(my_grid, Colv = NA, Rowv = NA, scale="row", col=rev(gray(0:100/100)))
+
+my_grid[my_grid < 1] <- NA
+my_heatmap3(my_grid, Colv = NA, Rowv = NA, scale="row", col=my_colors, main="ma1_vs_map2_comparison")
+my_heatmap16(my_grid, Colv = NA, Rowv = NA, scale="row", col=rev(heat.colors(100)), main="ma1_vs_map2_comparison")
+my_heatmap19(my_grid, Colv = NA, Rowv = NA, scale="row", col=rev(heat.colors(20)), main="map1_vs_map2_comparison", xlab="map2", ylab="map1")
+```
+
+my_heatmap(my_grid, Colv = NA, Rowv = NA, scale="row", col=rev(heat.colors(20)),
+    main=paste(map1_name, "_vs_", map2_name, "_comparison", sep=""), xlab=map2_name, ylab=paste(map1_name, sep=""))
+
+write to table
+```{r, echo=TRUE}
+write.table(my_grid, file="my_grid", sep="\t")
+save(my_grid, file="my_grid.Rdata")
+
+```
+
+show heatmap code
+```{r, echo=T}
+body(heatmap)
+
+```
+
+show my_heatmap19 code
+```{r, echo=F}
+function (x, Rowv = NULL, Colv = if (symm) "Rowv" else NULL, 
+    distfun = dist, hclustfun = hclust, reorderfun = function(d, 
+        w) reorder(d, w), add.expr, symm = FALSE, revC = TRUE, scale = c("row", "column", "none"), na.rm = TRUE, 
+    margins = c(5, 5), ColSideColors, RowSideColors, cexRow = 0.2 + 
+        1/log10(nr), cexCol = 0.2 + 1/log10(nc), labRow = NULL, 
+    labCol = NULL, main = NULL, xlab = NULL, ylab = NULL, keep.dendro = FALSE, 
+    verbose = getOption("verbose"), ...) 
+{
+    # create copy for printing values
+    my_org <- x
+    
+    #normal
+    scale <- if (symm && missing(scale)) 
+        "none"
+    else match.arg(scale)
+    if (length(di <- dim(x)) != 2 || !is.numeric(x)) 
+        stop("'x' must be a numeric matrix")
+    nr <- di[1L]
+    nc <- di[2L]
+    if (nr <= 1 || nc <= 1) 
+        stop("'x' must have at least 2 rows and 2 columns")
+    if (!is.numeric(margins) || length(margins) != 2L) 
+        stop("'margins' must be a numeric vector of length 2")
+    doRdend <- !identical(Rowv, NA)
+    doCdend <- !identical(Colv, NA)
+    if (!doRdend && identical(Colv, "Rowv")) 
+        doCdend <- FALSE
+    if (is.null(Rowv)) 
+        Rowv <- rowMeans(x, na.rm = na.rm)
+    if (is.null(Colv)) 
+        Colv <- colMeans(x, na.rm = na.rm)
+    if (doRdend) {
+        if (inherits(Rowv, "dendrogram")) 
+            ddr <- Rowv
+        else {
+            hcr <- hclustfun(distfun(x))
+            ddr <- as.dendrogram(hcr)
+            if (!is.logical(Rowv) || Rowv) 
+                ddr <- reorderfun(ddr, Rowv)
+        }
+        if (nr != length(rowInd <- order.dendrogram(ddr))) 
+            stop("row dendrogram ordering gave index of wrong length")
+    }
+    else rowInd <- 1L:nr
+    if (doCdend) {
+        if (inherits(Colv, "dendrogram")) 
+            ddc <- Colv
+        else if (identical(Colv, "Rowv")) {
+            if (nr != nc) 
+                stop("Colv = \"Rowv\" but nrow(x) != ncol(x)")
+            ddc <- ddr
+        }
+        else {
+            hcc <- hclustfun(distfun(if (symm) 
+                x
+            else t(x)))
+            ddc <- as.dendrogram(hcc)
+            if (!is.logical(Colv) || Colv) 
+                ddc <- reorderfun(ddc, Colv)
+        }
+        if (nc != length(colInd <- order.dendrogram(ddc))) 
+            stop("column dendrogram ordering gave index of wrong length")
+    }
+    else colInd <- 1L:nc
+    x <- x[rowInd, colInd]
+    labRow <- if (is.null(labRow)) 
+        if (is.null(rownames(x))) 
+            (1L:nr)[rowInd]
+        else rownames(x)
+    else labRow[rowInd]
+    labCol <- if (is.null(labCol)) 
+        if (is.null(colnames(x))) 
+            (1L:nc)[colInd]
+        else colnames(x)
+    else labCol[colInd]
+    
+    # changed to color relative values
+    if (scale == "row") {
+        maxx <- suppressWarnings(apply(x, 1L, max, na.rm = T))
+        x <- sweep(x, 1L, maxx, "/", check.margin = FALSE)
+    }
+    # changed to color relative values
+    else if (scale == "column") {
+        maxx <- suppressWarnings(apply(x, 2L, max, na.rm = T))
+        x <- sweep(x, 2L, maxx, "/", check.margin = FALSE)
+    }
+    lmat <- rbind(c(NA, 3), 2:1)
+    lwid <- c(if (doRdend) 1 else 0.05, 4)
+    lhei <- c((if (doCdend) 1 else 1) + if (!is.null(main)) 0.2 else 0, 
+        4)
+    if (!missing(ColSideColors)) {
+        if (!is.character(ColSideColors) || length(ColSideColors) != 
+            nc) 
+            stop("'ColSideColors' must be a character vector of length ncol(x)")
+        lmat <- rbind(lmat[1, ] + 1, c(NA, 1), lmat[2, ] + 1)
+        lhei <- c(lhei[1L], 0.2, lhei[2L])
+    }
+    if (!missing(RowSideColors)) {
+        if (!is.character(RowSideColors) || length(RowSideColors) != 
+            nr) 
+            stop("'RowSideColors' must be a character vector of length nrow(x)")
+        lmat <- cbind(lmat[, 1] + 1, c(rep(NA, nrow(lmat) - 1), 
+            1), lmat[, 2] + 1)
+        lwid <- c(lwid[1L], 0.2, lwid[2L])
+    }
+    lmat[is.na(lmat)] <- 0
+    if (verbose) {
+        cat("layout: widths = ", lwid, ", heights = ", lhei, 
+            "; lmat=\n")
+        print(lmat)
+    }
+    dev.hold()
+    on.exit(dev.flush())
+    op <- par(no.readonly = TRUE)
+    on.exit(par(op), add = TRUE)
+    layout(lmat, widths = lwid, heights = lhei, respect = TRUE)
+    if (!missing(RowSideColors)) {
+        par(mar = c(margins[1L], 0, 0, 0.5))
+        image(rbind(if (revC) 
+            nr:1L
+        else 1L:nr), col = RowSideColors[rowInd], axes = FALSE)
+    }
+    if (!missing(ColSideColors)) {
+        par(mar = c(0.5, 0, 0, margins[2L]))
+        image(cbind(1L:nc), col = ColSideColors[colInd], axes = FALSE)
+    }
+    par(mar = c(margins[1L], 0, 0, margins[2L]))
+    if (!symm || scale != "none") 
+        x <- t(x)
+    if (revC) {
+        iy <- nr:1
+        if (doRdend) 
+            ddr <- rev(ddr)
+        x <- x[, iy]
+        # switch rows
+        my_org <- my_org[iy,]
+    }
+    else iy <- 1L:nr
+    image(1L:nc, 1L:nr, x, xlim = 0.5 + c(0, nc), ylim = 0.5 + 
+        c(0, nr), axes = FALSE, xlab = "", ylab = "", ...)
+    #changed 1 to 3
+    axis(3, 1L:nc, labels = labCol, las = 2, line = -0.5, tick = 0, 
+        cex.axis = cexCol)
+    if (!is.null(xlab)) 
+        mtext(xlab, side = 3, line = margins[1L] )
+    axis(2, iy, labels = labRow, las = 2, line = -0.5, tick = 0, 
+        cex.axis = cexRow)
+    
+    # printing of values
+    for (xcord in 1:ncol(my_org))
+        for (ycord in 1:nrow(my_org))
+            text(xcord, ycord, my_org[ycord,xcord])
+            
+    # try printing box around heatmap
+    box(lty="solid", col="black")
+    
+    # try printing grid around values
+    grid(nrow(my_grid), ncol(my_grid))
+    
+    #changed 4 to 2
+    if (!is.null(ylab)) 
+        mtext(ylab, side = 2, line = margins[2L] )
+    if (!missing(add.expr)) 
+        eval.parent(substitute(add.expr))
+    par(mar = c(margins[1L], 0, 0, 0))
+    if (doRdend) 
+        plot(ddr, horiz = TRUE, axes = FALSE, yaxs = "i", leaflab = "none")
+    else frame()
+    par(mar = c(0, 0, if (!is.null(main)) 1 else 0, margins[2L]))
+    if (doCdend) 
+        plot(ddc, axes = FALSE, xaxs = "i", leaflab = "none")
+    else if (!is.null(main)) 
+        frame()
+    if (!is.null(main)) {
+        par(xpd = NA)
+        title(main, cex.main = 1.5 * op[["cex.main"]])
+    }
+    invisible(list(rowInd = rowInd, colInd = colInd, Rowv = if (keep.dendro && 
+        doRdend) ddr, Colv = if (keep.dendro && doCdend) ddc))
+}
+
+
+```
+
